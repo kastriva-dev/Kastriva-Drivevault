@@ -1,0 +1,21 @@
+{
+  "name": "gfilemanager",
+  "version": "1.0.0",
+  "description": "GFileManager - Windows desktop dan PWA file manager dengan sync Local/Cloud",
+  "main": "desktop/main.mjs",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev/mock-server.mjs",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "icons": "node dev/gen-icons.mjs",
+    "ui-test": "node dev/ui-test.cjs",
+    "share-check": "node dev/share-check.cjs && node dev/public-link-check.cjs",
+    "verify": "node --test \"tests/*.test.mjs\" && node dev/ui-test.cjs && node dev/share-check.cjs && node dev/public-link-check.cjs",
+    "desktop": "electron .",
+    "build": "electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "electron": "44.3.0",
+    "electron-builder": "26.15.3"
+  }
+}

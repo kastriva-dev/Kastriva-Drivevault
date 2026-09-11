@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>GFileManager</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<script>
+/* anti-FOUC: terapkan tema tersimpan sebelum CSS dirender */
+try {
+  var __t = localStorage.getItem('gfm.theme.v1') || 'dark';
+  var __eff = __t === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : __t;
+  document.documentElement.dataset.theme = __eff;
+  document.documentElement.style.colorScheme = __eff;
+} catch (e) { document.documentElement.dataset.theme = 'dark'; }
+</script>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="bg-gradient" aria-hidden="true"></div>
+<div class="bg-orb orb-a" aria-hidden="true"></div>
+<div class="bg-orb orb-b" aria-hidden="true"></div>
+
+<header class="topbar glass">
+  <button id="btn-menu" class="btn icon" aria-label="Menu sidebar">☰</button>
+  <div class="brand">
+    <span class="logo">🗂️</span>
+    <span class="brand-name">GFileManager</span>
+  </div>
+  <div class="topbar-actions">
+    <span id="net-status" class="pill" title="Status koneksi" aria-live="polite">
+      <span class="net-online">● Online</span><span class="net-offline">● Offline</span>
+    </span>
+    <span id="offline-badge" class="pill offline-badge hidden" title="Perubahan yang menunggu sinkron"></span>
+    <div class="seg" role="group" aria-label="Tema">
+      <button class="seg-btn theme-btn" data-theme="dark" title="Dark">🌙</button>
+      <button class="seg-btn theme-btn" data-theme="light" title="Light">☀️</button>
+      <button class="seg-btn theme-btn" data-theme="system" title="Ikuti sistem">🖥️</button>
+    </div>
+    <button id="btn-upload" class="btn primary" title="Upload file (klik atau drag & drop)">⬆ Upload</button>
+    <input id="dir-input" type="file" multiple webkitdirectory hidden>
+    <button id="btn-upload-dir" class="btn" title="Upload folder">📁⬆ Folder</button>
+    <button id="btn-newfolder" class="btn" title="Buat folder baru">📁 Folder Baru</button>
+    <button id="btn-workspace" class="btn hidden" title="Pilih Workspace Root lokal">🗂 Workspace</button>
+    <button id="btn-sync" class="btn" title="Buka panel sync">⇄ Sync</button>
+    <button id="btn-install" class="btn hidden" title="Install aplikasi">⤓ Install App</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside id="sidebar" class="glass sidebar">
+    <nav class="side-nav">
+      <button class="side-item active" data-view="all"><span class="ico">🗃️</span><span class="lbl">Semua File</span></button>
+      <button class="side-item" data-view="favorites"><span class="ico">⭐</span><span class="lbl">Favorit</span></button>
+      <button class="side-item" data-view="recent"><span class="ico">🕘</span><span class="lbl">Recent Files</span></button>
+      <button class="side-item" data-view="photos"><span class="ico">🖼️</span><span class="lbl">Foto</span></button>
+      <button class="side-item" data-view="trash"><span class="ico">🗑️</span><span class="lbl">Trash</span></button>
+    </nav>
+    <div class="side-storage glass-inset">
+      <div class="storage-label"><span>Local Storage</span><strong id="storage-local-percent">0%</strong></div>
+      <div class="storage-bar"><div id="storage-local-fill" class="storage-fill" style="width:0%"></div></div>
+      <div id="storage-local-free" class="storage-free"><span>Used: —</span><span>Free: —</span><span>Total: —</span></div>
+      <div class="storage-label" style="margin-top:10px"><span>Cloud Storage</span><strong id="storage-cloud-percent">0%</strong></div>
+      <div class="storage-bar"><div id="storage-cloud-fill" class="storage-fill" style="width:0%"></div></div>
+      <div id="storage-cloud-free" class="storage-free"><span>Used: —</span><span>Free: —</span><span>Total: —</span></div>
+      <div id="storage-text" class="storage-text">0 file</div>
+    </div>
+    <div class="side-note">Sync: <span id="side-sync-state">belum pernah</span></div>
+  </aside>
+
+  <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+  <nav id="bottom-nav" class="glass bottom-nav" aria-label="Navigasi bawah">
+    <button class="bn-item active" data-view="all"><span class="ico">🗃️</span><span class="lbl">Semua</span></button>
+    <button class="bn-item" data-view="favorites"><span class="ico">⭐</span><span class="lbl">Favorit</span></button>
+    <button class="bn-item" data-view="recent"><span class="ico">🕘</span><span class="lbl">Recent</span></button>
+    <button class="bn-item" data-view="photos"><span class="ico">🖼️</span><span class="lbl">Foto</span></button>
+  </nav>
+
+  <section class="content">
+    <div class="toolbar glass">
+      <button id="btn-back" class="btn icon" title="Ke folder atas" disabled>←</button>
+      <nav id="breadcrumb" class="breadcrumb" aria-label="lokasi"></nav>
+      <span id="selection-info" class="pill hidden"></span>
+      <div id="selection-actions" class="selection-actions hidden" role="toolbar" aria-label="Aksi file terpilih">
+        <button id="selected-download" class="btn">Download</button>
+        <button id="selected-copy" class="btn">Copy</button>
+        <button id="selected-move" class="btn">Move</button>
+        <button id="selected-delete" class="btn danger">Delete</button>
+        <button id="selected-share" class="btn">Share</button>
+      </div>
+      <div class="toolbar-right">
+        <input id="search" class="input search" type="search" placeholder="Cari nama, ekstensi, kategori, folder, metadata…" aria-label="Search global">
+        <button id="btn-adv" class="btn icon" title="Filter & urutkan">⚙</button>
+        <div class="seg" role="tablist" aria-label="Tampilan">
+          <button id="view-grid" class="seg-btn active" title="Tampilan grid">▦ Grid</button>
+          <button id="view-list" class="seg-btn" title="Tampilan list">☰ List</button>
+        </div>
+      </div>
+      <div id="adv-bar" class="adv-bar hidden">
+        <select id="sort-key" class="input select-sm" title="Urutkan">
+          <option value="name">Sort: Name</option>
+          <option value="modified">Sort: Date Modified</option>
+          <option value="created">Sort: Date Created</option>
+          <option value="size">Sort: Size</option>
+          <option value="type">Sort: Type</option>
+        </select>
+        <button id="sort-dir" class="btn icon" title="Arah urutan">↑</button>
+        <select id="filter-type" class="input select-sm" title="Filter kategori">
+          <option value="">Type: Semua</option>
+          <option value="folder">Folder</option>
+          <option value="image">Gambar</option>
+          <option value="video">Video</option>
+          <option value="audio">Audio</option>
+          <option value="pdf">PDF</option>
+          <option value="sheet">Spreadsheet</option>
+          <option value="doc">Dokumen</option>
+          <option value="other">Lainnya</option>
+        </select>
+        <select id="filter-size" class="input select-sm" title="Filter ukuran">
+          <option value="">Size: Semua</option>
+          <option value="small">&lt; 100 KB</option>
+          <option value="medium">100 KB – 10 MB</option>
+          <option value="large">&gt; 10 MB</option>
+        </select>
+        <select id="filter-date" class="input select-sm" title="Filter tanggal">
+          <option value="">Date: Semua</option>
+          <option value="today">Hari ini</option>
+          <option value="week">7 hari</option>
+          <option value="month">31 hari</option>
+        </select>
+        <select id="filter-location" class="input select-sm" title="Filter lokasi">
+          <option value="">Location: Semua</option>
+          <option value="root">Workspace Root</option>
+        </select>
+        <select id="filter-ext" class="input select-sm" title="Filter ekstensi"><option value="">Ext: Semua</option></select>
+        <button id="btn-filter-reset" class="btn icon" title="Reset filter">✕</button>
+        <button id="btn-empty-trash" class="btn danger hidden" title="Kosongkan trash">🗑 Empty Trash</button>
+      </div>
+    </div>
+
+    <div id="dropzone-hint" class="dropzone-hint hidden" role="status" aria-live="polite">
+      <span class="dropzone-icon" aria-hidden="true">⬇</span>
+      <strong>Drop files here</strong>
+      <span>File, multiple files, atau folder</span>
+    </div>
+
+    <div id="file-area" class="file-area" tabindex="0">
+      <div id="loading-state" class="loading-state" role="status" aria-live="polite" aria-label="Memuat file">
+        <div class="loading-head"><span class="spinner" aria-hidden="true"></span><span>Memuat file…</span></div>
+        <div class="skeleton-grid" aria-hidden="true">
+          <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
+          <div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>
+        </div>
+      </div>
+      <div id="load-error" class="load-error glass-inset hidden" role="alert">
+        <strong>Tidak dapat terhubung ke server.</strong>
+        <span id="load-error-detail">Periksa koneksi internet lalu coba lagi.</span>
+        <button id="btn-load-retry" class="btn primary" type="button">Retry</button>
+      </div>
+      <!-- grid view -->
+      <div id="grid" class="grid-view"></div>
+      <!-- list view -->
+      <div id="list" class="list-view hidden">
+        <div class="list-row list-head">
+          <span class="c-name">Name</span><span class="c-type">Type</span>
+          <span class="c-size">Size</span><span class="c-modified">Modified</span>
+        </div>
+      </div>
+      <div id="empty-state" class="empty hidden">
+        <div class="empty-icon">📂</div>
+        <div class="empty-title">Folder kosong</div>
+        <div class="empty-sub">Upload file atau buat folder baru.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- panel sync -->
+<section id="sync-panel" class="glass sync-panel hidden" aria-label="Panel sinkronisasi">
+  <div class="panel-head">
+    <b>⇄ Sync Engine</b>
+    <button id="sync-close" class="btn icon" aria-label="Tutup">✕</button>
+  </div>
+  <div class="sync-target">
+    <div>Local: <b id="sync-local-path">IndexedDB</b></div>
+    <div>Sync Engine: <b>Local ↔ Cloud</b></div>
+    <div>Server: <b id="sync-target-name">Google Drive</b> <span class="pill" id="sync-target-mode">(mock lokal)</span>
+      <button id="btn-cloud-config" class="btn hidden" type="button">Atur Server</button>
+    </div>
+  </div>
+  <div class="sync-modes">
+    <button class="btn sync-mode" data-mode="local2cloud">Local → Cloud</button>
+    <button class="btn sync-mode" data-mode="cloud2local">Cloud → Local</button>
+    <button class="btn sync-mode" data-mode="twoway">Two Way Sync</button>
+  </div>
+  <div class="sync-warn">Tidak ada file yang ditimpa tanpa pengecekan — konflik disimpan sebagai salinan terpisah.</div>
+  <div class="sync-queue">
+    <div class="queue-head">
+      <b>Sync Queue</b>
+      <button id="btn-flush" class="btn" title="Kirim antrian sekarang">⇅ Flush</button>
+    </div>
+    <ul id="queue-list" class="queue-list"></ul>
+  </div>
+  <div class="sync-conflicts">
+    <div class="queue-head">
+      <b>⚠️ Sync Conflict</b>
+      <span id="conflict-count" class="pill">0</span>
+    </div>
+    <ul id="conflict-list" class="queue-list"></ul>
+  </div>
+  <pre id="sync-log" class="sync-log" aria-live="polite"></pre>
+</section>
+
+<!-- context menu -->
+<ul id="ctx-menu" class="glass ctx-menu hidden" role="menu"></ul>
+
+<!-- dialog generik -->
+<dialog id="dialog" class="glass dialog">
+  <form id="dialog-form" method="dialog">
+    <h3 id="dialog-title"></h3>
+    <div id="dialog-body"></div>
+    <div class="dialog-actions">
+      <button type="button" id="dialog-cancel" class="btn">Batal</button>
+      <button type="submit" id="dialog-ok" class="btn primary">OK</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast glass hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="upload-panel" class="glass upload-panel hidden" aria-live="polite"></div>
+<div id="download-panel" class="glass upload-panel download-panel hidden" aria-live="polite"></div>
+<input id="file-input" type="file" multiple hidden>
+
+<script src="js/core.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/offline.js"></script>
+<script src="js/conflict.js"></script>
+<script src="js/features.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/app-main.js"></script>
+<script src="js/app-actions.js"></script>
+<script src="js/app-ctx.js"></script>
+<script src="js/app-sync.js"></script>
+</body>
+</html>

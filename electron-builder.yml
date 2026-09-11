@@ -1,0 +1,28 @@
+directories:
+  output: dist
+  buildResources: build
+files:
+  - index.html
+  - css/**/*
+  - js/**/*
+  - assets/**/*
+  - manifest.json
+  - service-worker.js
+  - p/**/*
+  - desktop/**/*
+extraMetadata:
+  main: desktop/main.mjs
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  artifactName: GFileManager-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true

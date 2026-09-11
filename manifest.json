@@ -1,0 +1,24 @@
+{
+  "name": "GFileManager",
+  "short_name": "GFiles",
+  "description": "File manager PWA dengan sync Local/Cloud dan desain glassmorphism",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "lang": "id",
+  "dir": "ltr",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Upload file", "url": "./index.html?action=upload" },
+    { "name": "Sync", "url": "./index.html?action=sync" }
+  ],
+  "categories": ["productivity", "utilities"]
+}

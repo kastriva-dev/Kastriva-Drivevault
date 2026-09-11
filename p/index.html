@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<meta name="robots" content="noindex">
+<title>Link Berbagi — GFileManager</title>
+<link rel="icon" href="/assets/icons/icon-192.png">
+<script>
+/* anti-FOUC: sama seperti app utama, hormati gfm.theme.v1 (visitor anonim: default system) */
+try {
+  var __t = localStorage.getItem('gfm.theme.v1') || 'system';
+  var __eff = __t === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : __t;
+  document.documentElement.dataset.theme = __eff;
+} catch (e) { /* privat mode: tetap dark */ }
+</script>
+<style>
+:root, html[data-theme="dark"] {
+  --bg1: #0b1020; --bg2: #101a33; --txt: #e8ecf8; --dim: #9aa6c8;
+  --glass: rgba(255,255,255,.06); --border: rgba(255,255,255,.12); --acc: #7c9cff;
+}
+html[data-theme="light"] {
+  --bg1: #eef2fb; --bg2: #e4eaf7; --txt: #16213c; --dim: #55628a;
+  --glass: rgba(255,255,255,.55); --border: rgba(22,33,60,.12); --acc: #3b5bdb;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  min-height: 100dvh; display: grid; place-items: center; padding: 20px;
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--txt);
+  background: radial-gradient(1200px 700px at 15% -10%, rgba(124,156,255,.18), transparent 60%),
+              radial-gradient(1000px 600px at 110% 110%, rgba(190,120,255,.14), transparent 60%),
+              linear-gradient(135deg, var(--bg1), var(--bg2));
+}
+.card {
+  width: min(560px, 100%); padding: 28px; border-radius: 20px;
+  background: var(--glass); border: 1px solid var(--border);
+  backdrop-filter: blur(18px) saturate(1.3); -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: 0 24px 60px rgba(0,0,0,.35); text-align: center;
+}
+.badge { display: inline-block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--acc); border: 1px solid var(--border); padding: 4px 12px; border-radius: 99px; margin-bottom: 18px; }
+.icon { font-size: 44px; line-height: 1; margin-bottom: 12px; }
+h1 { font-size: 19px; word-break: break-word; margin-bottom: 6px; }
+.meta { color: var(--dim); font-size: 13px; margin-bottom: 18px; }
+.preview { max-width: 100%; max-height: 46vh; border-radius: 12px; border: 1px solid var(--border);
+  margin: 0 auto 18px; display: none; background: #000; }
+.preview.pdf { width: 100%; height: 46vh; }
+.btn {
+  display: inline-block; border: 0; cursor: pointer; font: inherit; font-weight: 600;
+  color: #fff; background: linear-gradient(135deg, #5b7cfa, #7c5bfa);
+  padding: 11px 26px; border-radius: 99px; text-decoration: none;
+}
+.btn.secondary { background: transparent; color: var(--acc); border: 1px solid var(--border); margin-left: 10px; }
+.btn[disabled] { opacity: .5; cursor: wait; }
+.err { color: #ff7b8a; margin: 8px 0 16px; }
+html[data-theme="light"] .err { color: #c22743; }
+footer { margin-top: 22px; font-size: 12px; color: var(--dim); }
+footer a { color: var(--acc); text-decoration: none; }
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <span class="badge">Link Berbagi</span>
+  <div class="icon" id="icon">⏳</div>
+  <h1 id="title">Memuat berkas…</h1>
+  <p class="meta" id="meta"></p>
+  <div id="slot"></div>
+  <p id="status"></p>
+</main>
+<script>
+(function () {
+  var TOKEN_RE = /^[A-Za-z0-9_-]{8,64}$/;
+  var el = function (id) { return document.getElementById(id); };
+  function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+  function fmtSize(n) {
+    if (!Number.isFinite(n)) return '-';
+    var u = ['B', 'KB', 'MB', 'GB'], i = 0;
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (i ? n.toFixed(1) : n) + ' ' + u[i];
+  }
+  function fmtDate(s) { var d = new Date(s); return isNaN(d) ? '-' : d.toLocaleString('id-ID'); }
+  function fail(msg) {
+    el('icon').textContent = '🔒';
+    el('title').textContent = 'Link tidak tersedia';
+    el('meta').textContent = '';
+    el('status').innerHTML = '<span class="err">' + esc(msg) + '</span>' +
+      '<p>Berkas mungkin sudah dikembalikan ke Private oleh pemiliknya.</p>';
+    el('slot').innerHTML = '<a class="btn secondary" href="/">Buka GFileManager</a>';
+  }
+
+  var m = /^\/p\/([^/?#]+)/.exec(location.pathname);
+  var token = m ? decodeURIComponent(m[1]) : '';
+  if (!TOKEN_RE.test(token)) return fail('Format link tidak valid.');
+
+  fetch('/api/gas?action=publicGet&link=' + encodeURIComponent(token))
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j || !j.ok || !j.data) return fail((j && j.error) || 'Link tidak valid atau sudah dicabut.');
+      var d = j.data;
+      el('icon').textContent = d.type === 'folder' ? '📁' : (/^image\//.test(d.mime || '') ? '🖼️' : /^application\/pdf/.test(d.mime || '') ? '📕' : '📄');
+      el('title').textContent = d.name;
+      el('meta').textContent = (d.type === 'folder' ? 'Folder' : fmtSize(d.size)) + ' • ' + (d.mime || 'unknown') + ' • diubah ' + fmtDate(d.modified);
+      var html = '';
+      if (d.type === 'file' && d.dataUrl) {
+        if (/^image\//.test(d.mime || '')) {
+          html += '<img class="preview" style="display:inline-block" alt="pratinjau" src="' + esc(d.dataUrl) + '">';
+        } else if ((d.mime || '') === 'application/pdf') {
+          html += '<iframe class="preview pdf" style="display:block" title="pratinjau PDF" src="' + esc(d.dataUrl) + '"></iframe>';
+        }
+        html += '<button class="btn" id="dl">⬇ Unduh</button>';
+      } else if (d.type === 'folder') {
+        html += '<p style="margin-bottom:14px">Folder yang dibagikan (lihat isi lewat aplikasi).</p>';
+      } else {
+        return fail('Isi berkas tidak tersedia.');
+      }
+      html += '<a class="btn secondary" href="/">Buka GFileManager</a>';
+      el('slot').innerHTML = html;
+      var dl = el('dl');
+      if (dl) dl.addEventListener('click', function () {
+        dl.disabled = true;
+        try {
+          var comma = d.dataUrl.indexOf(',');
+          var bin = atob(d.dataUrl.slice(comma + 1));
+          var buf = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+          var url = URL.createObjectURL(new Blob([buf], { type: d.mime || 'application/octet-stream' }));
+          var a = document.createElement('a');
+          a.href = url; a.download = d.name || 'berkas';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        } catch (e) { alert('Unduh gagal: ' + e.message); }
+        dl.disabled = false;
+      });
+      document.title = d.name + ' — GFileManager';
+    })
+    .catch(function () { fail('Jaringan gagal — periksa koneksi lalu muat ulang.'); });
+})();
+</script>
+</body>
+</html>
