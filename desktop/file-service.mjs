@@ -133,11 +133,14 @@ export async function createFileService(workspaceRoot) {
 
   await scan();
 
-  async function createFolder(parentId = 'root', name = 'Folder Baru') {
+  async function createFolder(parentId = 'root', name = 'Folder Baru', syncKey) {
     validateParent(parentId);
+    const existing = syncKey ? db.entries.find((entry) => !entry.deleted && entry.syncKey === syncKey && entry.type === 'folder') : null;
+    if (existing) return existing;
     const entry = {
       id: id(), name: await uniqueName(parentId, name), type: 'folder', parentId, size: 0, mime: '',
       deleted: false, favorite: false, version: 1, created: new Date().toISOString(), modified: new Date().toISOString(),
+      syncKey: syncKey || undefined,
     };
     await fs.mkdir(await diskPath(entry));
     db.entries.push(entry);

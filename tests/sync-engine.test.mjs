@@ -65,6 +65,28 @@ test('plan twoway: syncKey memasangkan ID desktop dan cloud yang berbeda', () =>
   assert.deepEqual(p.pulls, []);
 });
 
+test('folder pasangan dianggap sama walau timestamp lokal dan cloud berbeda', () => {
+  const local = E('local-folder', '2026-01-01T00:00:00Z', 1, { type: 'folder', name: 'Docs', size: 0 });
+  const cloud = E('cloud-folder', '2026-01-02T00:00:00Z', 1, { type: 'folder', name: 'Docs', size: 0, syncKey: 'local-folder' });
+  const p = sync.plan([local], [cloud], 'twoway');
+  assert.equal(p.unchanged, 1);
+  assert.equal(p.conflicts.length, 0);
+});
+
+test('plan mengurutkan parent sebelum child walau input terbalik', () => {
+  const child = E('child', '2026-01-02T00:00:00Z', 1, { parentId: 'parent' });
+  const parent = E('parent', '2026-01-01T00:00:00Z', 1, { type: 'folder' });
+  const p = sync.plan([child, parent], [], 'twoway');
+  assert.deepEqual(p.pushes, ['parent', 'child']);
+});
+
+test('resolveTargetParent memasangkan parent berbeda ID melalui syncKey', () => {
+  const localParent = E('local-parent', '2026-01-01T00:00:00Z', 1, { type: 'folder' });
+  const cloudParent = E('cloud-parent', '2026-01-01T00:00:00Z', 1, { type: 'folder', syncKey: 'local-parent' });
+  assert.equal(sync.resolveTargetParent('local-parent', [localParent], [cloudParent]), 'cloud-parent');
+  assert.equal(sync.resolveTargetParent('cloud-parent', [cloudParent], [localParent]), 'local-parent');
+});
+
 test('plan twoway: perubahan sama-sama baru -> konflik ditahan, tidak ada yang hilang', () => {
   const L = [E('x', '2026-01-05T00:00:00Z', 3, { size: 11 })];
   const C = [E('x', '2026-01-05T00:00:00Z', 3, { size: 99 })];

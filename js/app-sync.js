@@ -162,34 +162,57 @@
     if (side) side.textContent = logs.length ? logs[logs.length - 1] : 'belum pernah';
   };
 
+  let syncRunning = false;
+  let autoSyncTimer = null;
+
   App.runSync = async function (mode) {
+    if (syncRunning) return null;
+    syncRunning = true;
     const btns = $$('.sync-mode');
     btns.forEach((b) => { b.disabled = true; });
     const logEl = $('#sync-log');
     logEl.textContent = 'Menjalankan sync (' + mode + ')…';
     try {
+      const localEntries = MM.store.load().filter((e) => !e.deleted);
+      const cloudEntries = (await MM.cloudApi.list()).data.filter((e) => e.parentId !== undefined);
       const res = await MM.sync.run({
         mode: mode,
-        getLocal: async () => MM.store.load().filter((e) => !e.deleted),
-        getCloud: async () => (await MM.cloudApi.list()).data.filter((e) => e.parentId !== undefined),
+        getLocal: async () => localEntries,
+        getCloud: async () => cloudEntries,
         pushEntry: async (e) => {
-          if (e.type === 'folder') { await MM.cloudApi.createFolder(e.parentId, e.name, e.syncKey || e.id); return; }
+          const parentId = MM.sync.resolveTargetParent(e.parentId, localEntries, cloudEntries);
+          if (e.type === 'folder') {
+            const result = await MM.cloudApi.createFolder(parentId, e.name, e.syncKey || e.id);
+            if (result.data) cloudEntries.push(result.data);
+            return;
+          }
           let blob = await MM.blobStore.get(e.id);
           if (!blob && window.gfmDesktop) {
             const local = await MM.api.download(e.id);
             blob = await (await fetch(local.dataUrl)).blob();
           }
-          await MM.cloudApi.upload(e.parentId, e.name, e.mime, blob || new Blob(['']), e.syncKey || e.id);
+          await MM.cloudApi.upload(parentId, e.name, e.mime, blob || new Blob(['']), e.syncKey || e.id);
         },
         pullEntry: async (e) => {
-          if (e.type === 'folder') { App.localUpsert(e); return; }
+          const parentId = MM.sync.resolveTargetParent(e.parentId, cloudEntries, localEntries);
+          if (e.type === 'folder') {
+            if (window.gfmDesktop) {
+              const result = await MM.api.call('createFolder', { parentId, name: e.name, syncKey: e.syncKey || e.id });
+              if (result.data) localEntries.push(result.data);
+            } else {
+              const entry = { ...e, parentId };
+              App.localUpsert(entry);
+              localEntries.push(entry);
+            }
+            return;
+          }
           const d = await MM.cloudApi.download(e.id);
           const blob = await (await fetch(d.dataUrl)).blob();
           if (window.gfmDesktop) {
-            await MM.api.call('upload', { parentId: e.parentId, name: e.name, mime: e.mime, dataUrl: d.dataUrl, syncKey: e.syncKey || e.id });
+            await MM.api.call('upload', { parentId, name: e.name, mime: e.mime, dataUrl: d.dataUrl, syncKey: e.syncKey || e.id });
           } else {
             await MM.blobStore.put(e.id, blob);
-            App.localUpsert(d.entry);
+            App.localUpsert({ ...d.entry, parentId });
           }
         },
         copyEntry: async (e, newName) => {
@@ -228,8 +251,19 @@
       logEl.textContent += '\nSYNC GAGAL: ' + err.message;
       App.toast('Sync gagal: ' + err.message);
     } finally {
+      syncRunning = false;
       btns.forEach((b) => { b.disabled = false; });
     }
+  };
+
+  App.scheduleAutoSync = function () {
+    if (!window.gfmDesktop || !App.desktopInfo || !App.desktopInfo.cloudConfigured || autoSyncTimer) return;
+    const run = () => {
+      if (!document.hidden && navigator.onLine) App.runSync('twoway');
+    };
+    window.addEventListener('online', run);
+    autoSyncTimer = window.setInterval(run, 60000);
+    run();
   };
 
   App.localUpsert = function (entry) {

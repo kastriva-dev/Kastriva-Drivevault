@@ -80,3 +80,14 @@ test('desktop service menyaring nama Windows berbahaya dan mencegah siklus folde
   const reserved = await service.upload('root', 'CON.txt', 'text/plain', 'data:text/plain;base64,eA==');
   assert.equal(reserved.name, '_CON.txt');
 });
+
+test('desktop createFolder memakai syncKey agar pull cloud idempotent', async (t) => {
+  const { root, service } = await fixture();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const first = await service.createFolder('root', 'Cloud Docs', 'cloud-folder-1');
+  const second = await service.createFolder('root', 'Cloud Docs', 'cloud-folder-1');
+  assert.equal(second.id, first.id);
+  assert.equal(second.syncKey, 'cloud-folder-1');
+  assert.equal((await service.list()).filter((entry) => entry.syncKey === 'cloud-folder-1').length, 1);
+});

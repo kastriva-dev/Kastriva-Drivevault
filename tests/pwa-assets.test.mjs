@@ -133,3 +133,12 @@ test('GAS sync: syncKey dipertahankan agar entri desktop dan cloud dapat dipasan
   assert.match(gs, /x\.syncKey\s*===\s*p\.syncKey/,
     'upload berikutnya harus mencari file berdasarkan syncKey, bukan nama saja');
 });
+
+test('desktop: Two Way Sync otomatis aktif setelah info cloud tersedia', () => {
+  const sync = readFileSync(path.join(ROOT, 'js', 'app-sync.js'), 'utf8');
+  const actions = readFileSync(path.join(ROOT, 'js', 'app-actions.js'), 'utf8');
+  assert.match(sync, /App\.scheduleAutoSync\s*=\s*function/);
+  assert.match(sync, /App\.runSync\('twoway'\)/);
+  assert.match(sync, /setInterval\(run,\s*60000\)/);
+  assert.match(actions, /App\.desktopInfo\s*=\s*info;[\s\S]{0,120}App\.scheduleAutoSync\(\)/);
+});

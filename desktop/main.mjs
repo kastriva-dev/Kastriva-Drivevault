@@ -24,7 +24,7 @@ async function dispatch(action, payload = {}) {
     let data;
     switch (action) {
       case 'list': data = await service.list(); break;
-      case 'createFolder': data = await service.createFolder(payload.parentId, payload.name); break;
+      case 'createFolder': data = await service.createFolder(payload.parentId, payload.name, payload.syncKey); break;
       case 'upload': data = await service.upload(payload.parentId, payload.name, payload.mime, payload.dataUrl, payload.syncKey); break;
       case 'rename': data = await service.rename(payload.id, payload.name); break;
       case 'move': data = await service.move(payload.ids || [payload.id], payload.parentId); break;

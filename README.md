@@ -2,17 +2,18 @@
 
 File manager PWA bergaya **glassmorphism** dengan sync **Local ↔ Cloud** (Google Apps Script + Google Drive).
 
-## Menjalankan (dev, tanpa Google)
+## Menjalankan secara lokal
 
 ```bash
-npm run dev        # mock backend + static server di http://localhost:8177
+npm run dev        # web lokal + API cloud production di http://localhost:8177
+npm run dev:mock   # backend tiruan terpisah untuk pengembangan/test tanpa Google
 npm test           # unit test (sync engine, API, proxy modul API, aset PWA)
 npm run ui-test    # smoke test UI via puppeteer-core + Chrome
 npm run share-check # verifikasi dialog Share + halaman link publik /p/<token>
 npm run verify     # test + ui-test + share-check + public-link-check
 ```
 
-Buka http://localhost:8177 — data seed: folder `Projects`, `laporan.pdf`, `data.xlsx`, `foto.jpg`.
+Buka http://localhost:8177. `npm run dev` meneruskan `/api/gas` ke deployment Vercel sehingga akun dan data cloud sama dengan web production. Data seed `Projects`, `laporan.pdf`, `data.xlsx`, `foto.jpg` hanya ada pada `npm run dev:mock`.
 
 ## Fitur
 
@@ -64,14 +65,16 @@ Catatan login produksi: `gas/Code.gs` memakai auth multi-user dan mengisolasi me
 
 Jangan membuka `index.html` dengan double-click (`file://`). Webapp memakai endpoint `/api/gas` dan service worker sehingga harus dijalankan melalui HTTP/HTTPS.
 
-Untuk mode development tanpa Google Drive:
+Untuk mode lokal yang memakai backend cloud production yang sama dengan Vercel:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Kemudian buka `http://localhost:8177`. Mode ini memakai mock backend dan data uji lokal.
+Kemudian buka `http://localhost:8177`. Default target cloud adalah `https://kastriva-drivevault.vercel.app`; target dapat diganti dengan env `GFM_CLOUD_ORIGIN` bila domain production berubah.
+
+Untuk backend mock dengan data uji lokal yang sengaja terpisah dari Vercel, jalankan `npm run dev:mock`.
 
 ### B. Mengaktifkan webapp production
 
@@ -134,6 +137,7 @@ Documents/GFileManager
    - **Local → Cloud**: kirim perubahan lokal ke cloud.
    - **Cloud → Local**: ambil perubahan cloud ke lokal.
    - **Two Way Sync**: sinkronisasi dua arah dan tahan konflik untuk keputusan pengguna.
+10. Aplikasi Windows menjalankan Two Way Sync saat dibuka, saat kembali online, dan setiap 60 detik selama aplikasi aktif. Tombol sync tetap tersedia untuk menjalankan sinkronisasi langsung.
 
 ### D. PWA / HP
 

@@ -17,8 +17,37 @@
     return (a.version || 0) > (b.version || 0);
   }
   function sameContent(a, b) {
+    if (a && b && a.type === 'folder' && b.type === 'folder') return a.name === b.name;
     return a && b && a.size === b.size &&
       (a.hash ? a.hash === b.hash : Date.parse(a.modified) === Date.parse(b.modified));
+  }
+
+  function sortParentFirst(ids, entries) {
+    const keyOf = (e) => e.syncKey || e.id;
+    const byId = new Map(entries.map((e) => [e.id, e]));
+    const depth = (entry) => {
+      let value = 0;
+      let parentId = entry && entry.parentId;
+      const seen = new Set();
+      while (parentId && parentId !== 'root' && !seen.has(parentId)) {
+        seen.add(parentId);
+        const parent = byId.get(parentId);
+        if (!parent) break;
+        value++;
+        parentId = parent.parentId;
+      }
+      return value;
+    };
+    const order = new Map(ids.map((id, index) => [id, index]));
+    return [...ids].sort((left, right) => depth(entries.find((e) => keyOf(e) === left)) - depth(entries.find((e) => keyOf(e) === right)) || order.get(left) - order.get(right));
+  }
+
+  function resolveTargetParent(parentId, sourceEntries, targetEntries) {
+    if (!parentId || parentId === 'root') return 'root';
+    const sourceParent = sourceEntries.find((entry) => entry.id === parentId || entry.syncKey === parentId);
+    const key = sourceParent ? (sourceParent.syncKey || sourceParent.id) : parentId;
+    const targetParent = targetEntries.find((entry) => entry.id === key || entry.syncKey === key);
+    return targetParent ? targetParent.id : parentId;
   }
 
   /* Rencana sync: pushes/pulls/deletes + conflicts (ditahan utk review). */
@@ -71,6 +100,8 @@
         else out.pulls.push(id);
       }
     }
+    out.pushes = sortParentFirst(out.pushes, localEntries);
+    out.pulls = sortParentFirst(out.pulls, cloudEntries);
     return out;
   }
 
@@ -144,6 +175,6 @@
     return { plan: p, log, pushed: p.pushes.length, pulled: p.pulls.length, conflicts: p.conflicts.length };
   }
 
-  MM.sync = { plan, run, conflictName, localCopyName, isNewer, sameContent };
+  MM.sync = { plan, run, conflictName, localCopyName, isNewer, sameContent, resolveTargetParent };
   window.MM = MM;
 })();

@@ -55,6 +55,7 @@
     if (window.gfmDesktop) {
       window.gfmDesktop.info().then((info) => {
         App.desktopInfo = info;
+        if (App.scheduleAutoSync) App.scheduleAutoSync();
         App.renderBreadcrumb();
         const localPath = $('#sync-local-path');
         const mode = $('#sync-target-mode');
