@@ -95,19 +95,21 @@
         reader.readAsDataURL(file);
         return;
       }
-      const fd = new FormData();
-      fd.append('action', 'upload');
-      // jalur XHR bypass MM.api.call (#29) -> token wajib ikut di body
-      if (window.MMAuth && MMAuth.token) fd.append('token', MMAuth.token);
-      fd.append('parentId', parentId);
-      fd.append('name', file.name);
-      fd.append('mime', file.type);
-      fd.append('size', String(file.size));
-      fd.append('dataUrl', ''); // diisi di bawah
       const fr = new FileReader();
       fr.onload = () => {
-        fd.set('dataUrl', fr.result);
+        // Kirim kontrak JSON yang sama dengan MM.api.call; parser Vercel tidak
+        // menjamin FormData tetap dapat diteruskan apa adanya ke Apps Script.
+        const payload = {
+          action: 'upload',
+          token: window.MMAuth && MMAuth.token ? MMAuth.token : undefined,
+          parentId,
+          name: file.name,
+          mime: file.type,
+          size: file.size,
+          dataUrl: fr.result,
+        };
         xhr.open('POST', '/api/gas');
+        xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.upload.onprogress = (ev) => {
           if (ev.lengthComputable) {
             upload.loaded = Math.min(file.size, Math.round((ev.loaded / ev.total) * file.size));
@@ -127,7 +129,7 @@
         };
         xhr.onerror = () => { upload.status = 'Error'; reject(new Error('jaringan')); };
         xhr.onabort = () => { upload.status = 'Canceled'; reject(new Error('dibatalkan')); };
-        xhr.send(fd);
+        xhr.send(JSON.stringify(payload));
       };
       fr.onerror = () => reject(fr.error);
       fr.readAsDataURL(file);

@@ -119,6 +119,13 @@ test('desktop: init menunggu cloud/local auth selesai sebelum memeriksa sesi', (
     'Electron harus menunggu info/config cloud dan sesi selesai sebelum isAuth()');
 });
 
+test('upload web mengirim JSON sesuai kontrak proxy Vercel', () => {
+  const features = readFileSync(path.join(ROOT, 'js', 'features.js'), 'utf8');
+  assert.match(features, /xhr\.setRequestHeader\('Content-Type', 'application\/json'\)/);
+  assert.match(features, /xhr\.send\(JSON\.stringify\(payload\)\)/);
+  assert.doesNotMatch(features, /new FormData\(\)/);
+});
+
 test('GAS sync: syncKey dipertahankan agar entri desktop dan cloud dapat dipasangkan', () => {
   const gs = readFileSync(path.join(ROOT, 'gas', 'Code.gs'), 'utf8');
   assert.match(gs, /syncKey:\s*p\.syncKey\s*\|\|/,
