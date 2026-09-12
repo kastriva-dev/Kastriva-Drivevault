@@ -1,4 +1,6 @@
 node_modules/
+dist/
 dev/.data/
 .vercel/
 .DS_Store
+.env*

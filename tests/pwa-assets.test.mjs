@@ -101,6 +101,7 @@ test('offline mode: sw cache + indikator + IndexedDB queue', () => {
 
 test('GAS Code.gs: semua action tersedia', () => {
   const gs = readFileSync(path.join(ROOT, 'gas', 'Code.gs'), 'utf8');
+  assert.doesNotThrow(() => new Function(gs), 'Code.gs harus valid secara sintaks JavaScript');
   for (const a of ['list', 'upload', 'delete', 'createFolder', 'rename', 'move', 'favorite', 'download',
     'share', 'shareInfo', 'publicGet']) {
     assert.ok(gs.includes(`'${a}'`), 'action hilang: ' + a);
@@ -110,4 +111,18 @@ test('GAS Code.gs: semua action tersedia', () => {
   // #31/#32: sanitasi nama juga wajib ada di backend (parity dengan mock)
   assert.ok(gs.includes('sanitizeName_'), 'sanitizeName_ hilang');
   assert.match(gs, /uniqueName_\(db, e\.parentId, sanitizeName_\(/, 'rename tidak men-sanitize nama');
+});
+
+test('desktop: init menunggu cloud/local auth selesai sebelum memeriksa sesi', () => {
+  const syncUi = readFileSync(path.join(ROOT, 'js', 'app-sync.js'), 'utf8');
+  assert.match(syncUi, /await\s+MMAuth\.wire\(\)/,
+    'Electron harus menunggu info/config cloud dan sesi selesai sebelum isAuth()');
+});
+
+test('GAS sync: syncKey dipertahankan agar entri desktop dan cloud dapat dipasangkan', () => {
+  const gs = readFileSync(path.join(ROOT, 'gas', 'Code.gs'), 'utf8');
+  assert.match(gs, /syncKey:\s*p\.syncKey\s*\|\|/,
+    'createFolder/upload GAS harus menyimpan syncKey kiriman desktop');
+  assert.match(gs, /x\.syncKey\s*===\s*p\.syncKey/,
+    'upload berikutnya harus mencari file berdasarkan syncKey, bukan nama saja');
 });

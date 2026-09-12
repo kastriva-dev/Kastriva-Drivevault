@@ -56,6 +56,15 @@ test('plan twoway: hanya di satu sisi -> push/pull tanpa hapus', () => {
   assert.equal(p.deletes.local.length + p.deletes.cloud.length, 0);
 });
 
+test('plan twoway: syncKey memasangkan ID desktop dan cloud yang berbeda', () => {
+  const L = [E('local-1', '2026-01-02T00:00:00Z', 1, { hash: 'sama' })];
+  const C = [E('cloud-9', '2026-01-02T00:00:00Z', 1, { hash: 'sama', syncKey: 'local-1' })];
+  const p = sync.plan(L, C, 'twoway');
+  assert.equal(p.unchanged, 1);
+  assert.deepEqual(p.pushes, []);
+  assert.deepEqual(p.pulls, []);
+});
+
 test('plan twoway: perubahan sama-sama baru -> konflik ditahan, tidak ada yang hilang', () => {
   const L = [E('x', '2026-01-05T00:00:00Z', 3, { size: 11 })];
   const C = [E('x', '2026-01-05T00:00:00Z', 3, { size: 99 })];

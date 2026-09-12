@@ -15,7 +15,7 @@ Kastriva-DriveVault/
 ├── js/app-*.js           UI controller: render, context menu, upload, sync UI, share dialog
 ├── manifest.json         PWA manifest (standalone, ikon, theme)
 ├── sw.js                 Service worker: offline shell + cache assets (stale-while-revalidate)
-├── backend/Code.gs       Backend Google Apps Script asli (DriveApp) — paritas aksi dgn mock
+├── gas/*.gs              Backend Google Apps Script asli (DriveApp) — paritas aksi dgn mock
 ├── api/gas.js            Proxy Vercel → Apps Script Web App (POST JSON + GET query, timeout 25s)
 ├── vercel.json           Rewrite /p/:token -> /p/index.html + header no-store
 ├── dev/mock-server.mjs   Backend tiruan di disk (port 8177) untuk dev/test tanpa Google

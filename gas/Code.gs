@@ -76,11 +76,10 @@ var SHARE_MODES = { 'private': 1, 'shared': 1, 'public': 1 };
 function handle_(action, p) {
   var db = loadMeta_();
   p = p || {};
+  if (AUTH_ACTIONS[action]) return authHandle_(action, p);
+  var writeLock = LockService.getScriptLock();
+  writeLock.waitLock(30000);
   try {
-    if (AUTH_ACTIONS[action]) return authHandle_(action, p);
-    var writeLock = LockService.getScriptLock();
-    writeLock.waitLock(30000);
-    try {
     var currentUser = null;
     if (!PUBLIC_ACTIONS[action]) {
       currentUser = authRequireUser_(p.token);
@@ -104,7 +103,8 @@ function handle_(action, p) {
         var e = {
           id: 'id-' + Utilities.getUuid(), name: uniqueName_(db, pid, sanitizeName_(p.name || 'Folder Baru')),
           type: 'folder', parentId: pid, size: 0, mime: '', deleted: false,
-          version: 1, favorite: false, modified: new Date().toISOString(), owner: currentUser.id
+          version: 1, favorite: false, modified: new Date().toISOString(), owner: currentUser.id,
+          syncKey: p.syncKey || null
         };
         db.entries.push(e); saveMeta_(db);
         driveCreateFolderForEntry_(e); // mirror folder di Drive
@@ -121,7 +121,9 @@ function handle_(action, p) {
         var existing = null;
         for (var i = 0; i < db.entries.length; i++) {
           var x = db.entries[i];
-          if (x.owner === currentUser.id && !x.deleted && x.parentId === pid && x.name.toLowerCase() === String(safeName).toLowerCase() && x.type === 'file') { existing = x; break; }
+          if (x.owner === currentUser.id && !x.deleted && x.type === 'file' &&
+              ((p.syncKey && x.syncKey === p.syncKey) ||
+               (!p.syncKey && x.parentId === pid && x.name.toLowerCase() === String(safeName).toLowerCase()))) { existing = x; break; }
         }
         var file = driveCreateOrReplaceFile_(existing || { parentId: pid, name: safeName }, blob);
         if (existing) {
@@ -130,6 +132,7 @@ function handle_(action, p) {
           existing.driveFileId = file.getId();
           existing.previewUrl = drivePreviewUrl_(file.getId());
           existing.hash = hexDigest_(blob.getBytes()); existing.syncStatus = 'Synced';
+          if (p.syncKey) existing.syncKey = p.syncKey;
           touch_(existing); saveMeta_(db);
           return { ok: true, data: enrichMetadata_(existing) };
         }
@@ -138,7 +141,8 @@ function handle_(action, p) {
           size: blob.getBytes().length, mime: blob.getContentType(), deleted: false,
           version: 1, favorite: false, created: new Date().toISOString(), modified: new Date().toISOString(),
           hash: hexDigest_(blob.getBytes()), syncStatus: 'Synced', driveFileId: file.getId(),
-          previewUrl: drivePreviewUrl_(file.getId()), owner: currentUser.id
+          previewUrl: drivePreviewUrl_(file.getId()), owner: currentUser.id,
+          syncKey: p.syncKey || null
         };
         db.entries.push(nf); saveMeta_(db);
         return { ok: true, data: enrichMetadata_(nf) };
@@ -288,7 +292,6 @@ function handle_(action, p) {
     return { ok: false, error: String(err) };
   } finally {
     try { writeLock.releaseLock(); } catch (_) {}
-  }
   }
 }
 

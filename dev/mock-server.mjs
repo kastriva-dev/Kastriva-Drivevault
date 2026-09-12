@@ -241,7 +241,7 @@ function handleApi(action, p = {}) {
     case 'createFolder': {
       const parentId = p.parentId || 'root';
       if (parentId !== 'root' && (!find(db, parentId) || find(db, parentId).type !== 'folder')) return { ok: false, error: 'parentId tidak valid' };
-      const e = { id: 'id-' + crypto.randomUUID(), name: uniqueName(db, parentId, sanitizeName(p.name || 'Folder Baru')), type: 'folder', parentId, size: 0, mime: '', deleted: false, version: 1, favorite: false, owner: p._user.id, created: new Date().toISOString(), modified: new Date().toISOString() };
+      const e = { id: 'id-' + crypto.randomUUID(), name: uniqueName(db, parentId, sanitizeName(p.name || 'Folder Baru')), type: 'folder', parentId, size: 0, mime: '', deleted: false, version: 1, favorite: false, owner: p._user.id, syncKey: p.syncKey || null, created: new Date().toISOString(), modified: new Date().toISOString() };
       db.entries.push(e); saveDb(db);
       return { ok: true, data: e };
     }
@@ -253,13 +253,16 @@ function handleApi(action, p = {}) {
       if (!m) return { ok: false, error: 'dataUrl tidak valid' };
       const buf = m[2] ? Buffer.from(m[3], 'base64') : Buffer.from(decodeURIComponent(m[3]));
       const safeName = sanitizeName(p.name); // #32: nama dari client tidak pernah dipercaya
-      let e = db.entries.find(x => !x.deleted && x.parentId === parentId && x.name.toLowerCase() === safeName.toLowerCase());
+      let e = db.entries.find(x => !x.deleted && x.owner === p._user.id && x.type === 'file' &&
+        ((p.syncKey && x.syncKey === p.syncKey) ||
+         (!p.syncKey && x.parentId === parentId && x.name.toLowerCase() === safeName.toLowerCase())));
       if (e) { /* replace content = version bump, bukan duplikat */ }
       else {
-        e = { id: 'id-' + crypto.randomUUID(), name: safeName, type: 'file', parentId, deleted: false, version: 1, favorite: false, owner: p._user.id, created: new Date().toISOString(), mime: p.mime || m[1] || 'application/octet-stream', size: 0, modified: new Date().toISOString() };
+        e = { id: 'id-' + crypto.randomUUID(), name: safeName, type: 'file', parentId, deleted: false, version: 1, favorite: false, owner: p._user.id, syncKey: p.syncKey || null, created: new Date().toISOString(), mime: p.mime || m[1] || 'application/octet-stream', size: 0, modified: new Date().toISOString() };
         db.entries.push(e);
       }
       e.mime = p.mime || m[1] || e.mime || 'application/octet-stream';
+      if (p.syncKey) e.syncKey = p.syncKey;
       e.hash = crypto.createHash('sha256').update(buf).digest('hex');
       e.syncStatus = 'Synced';
       writeFileBlob(db, e, buf); touch(e); saveDb(db);

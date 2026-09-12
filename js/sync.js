@@ -23,8 +23,9 @@
 
   /* Rencana sync: pushes/pulls/deletes + conflicts (ditahan utk review). */
   function plan(localEntries, cloudEntries, mode) {
-    const L = new Map(localEntries.map((e) => [e.id, e]));
-    const C = new Map(cloudEntries.map((e) => [e.id, e]));
+    const keyOf = (e) => e.syncKey || e.id;
+    const L = new Map(localEntries.map((e) => [keyOf(e), e]));
+    const C = new Map(cloudEntries.map((e) => [keyOf(e), e]));
     const out = { pushes: [], pulls: [], conflicts: [], deletes: { local: [], cloud: [] }, unchanged: 0 };
     const ids = new Set([...L.keys(), ...C.keys()]);
     for (const id of ids) {
@@ -104,8 +105,9 @@
     const p = plan(local, cloud, mode);
     say(`Sync mode=${mode}: ${p.pushes.length} push, ${p.pulls.length} pull, ${p.conflicts.length} konflik, ${p.deletes.local.length + p.deletes.cloud.length} hapus, ${p.unchanged} sama.`);
 
-    const L = new Map(local.map((e) => [e.id, e]));
-    const C = new Map(cloud.map((e) => [e.id, e]));
+    const keyOf = (e) => e.syncKey || e.id;
+    const L = new Map(local.map((e) => [keyOf(e), e]));
+    const C = new Map(cloud.map((e) => [keyOf(e), e]));
 
     for (const id of p.pushes) {
       const e = L.get(id);

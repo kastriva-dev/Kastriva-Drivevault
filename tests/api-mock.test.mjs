@@ -71,6 +71,18 @@ test('upload nama sama di folder sama -> replace (bukan duplikat), version naik'
   assert.equal(list.data.filter((e) => e.name === 'dup.txt' && !e.deleted).length, 1);
 });
 
+test('syncKey: upload desktop berulang memperbarui satu entri cloud', async () => {
+  await api('_reset');
+  const mk = (s) => 'data:text/plain;base64,' + Buffer.from(s).toString('base64');
+  const first = await api('upload', { parentId: 'root', name: 'awal.txt', mime: 'text/plain', dataUrl: mk('v1'), syncKey: 'local-123' });
+  const second = await api('upload', { parentId: 'root', name: 'nama-baru.txt', mime: 'text/plain', dataUrl: mk('v2'), syncKey: 'local-123' });
+  assert.ok(first.ok && second.ok);
+  assert.equal(second.data.id, first.data.id);
+  assert.equal(second.data.syncKey, 'local-123');
+  const list = await api('list');
+  assert.equal(list.data.filter((entry) => entry.syncKey === 'local-123').length, 1);
+});
+
 test('createFolder + uniqueName (+1) saat nama bentrok', async () => {
   await api('_reset');
   const f1 = await api('createFolder', { parentId: 'root', name: 'Docs' });

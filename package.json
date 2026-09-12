@@ -11,6 +11,7 @@
     "icons": "node dev/gen-icons.mjs",
     "ui-test": "node dev/ui-test.cjs",
     "share-check": "node dev/share-check.cjs && node dev/public-link-check.cjs",
+    "online-smoke": "node dev/online-smoke.cjs",
     "verify": "node --test \"tests/*.test.mjs\" && node dev/ui-test.cjs && node dev/share-check.cjs && node dev/public-link-check.cjs",
     "desktop": "electron .",
     "build": "electron-builder --win nsis portable --publish never",

@@ -272,7 +272,7 @@
 
   /* ---------- init ---------- */
   async function init() {
-    if (window.MMAuth) MMAuth.wire(); // #29: gate sesi sebelum data dimuat
+    if (window.MMAuth) await MMAuth.wire(); // #29: tunggu mode desktop/cloud diketahui sebelum memeriksa sesi
     if (window.MMAuth && !MMAuth.isAuth()) return; // overlay login tampil; muat data setelah login
     App.wireToolbar();
     App.wireDnd();

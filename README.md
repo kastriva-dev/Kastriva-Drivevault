@@ -48,14 +48,14 @@ Buka http://localhost:8177 — data seed: folder `Projects`, `laporan.pdf`, `dat
 
 ## Deploy ke Vercel + Google Apps Script
 
-1. Buat Apps Script dan salin seluruh file `backend/*.gs` sebagai file terpisah → Deploy → Web App (akses: siapa saja).
+1. Buat Apps Script dan salin seluruh file `gas/*.gs` sebagai file terpisah → Deploy → Web App (akses: siapa saja).
 2. Set env `GAS_URL` di Vercel = URL Web App (`…/exec`).
 3. Deploy repo ini ke Vercel (`api/gas.js` mem-proxy ke Apps Script, bebas CORS; `vercel.json` mengarahkan `/p/:token` ke halaman link publik).
 4. Link publik hasil Share (`…/p/<token>`) langsung bisa dibuka visitor anonim — tanpa login.
 
 API: `POST /api/gas {action: list|upload|delete|createFolder|rename|move|favorite|download|share|shareInfo|sharedList|publicGet|register|login|logout|me|quota}`.
 
-Catatan login produksi: `backend/Code.gs` menyimpan metadata tanpa auth multi-user; untuk multi-user penuh, deploy lewat proxy `api/gas.js` + `ADMIN_API_TOKEN` (sama pola dengan kastriva-smartkasir) atau batasi akses Web App ke akun Google tertentu. Kredensial dev mock: `uji@gfm.app` / `password123`.
+Catatan login produksi: `gas/Code.gs` memakai auth multi-user dan mengisolasi metadata berdasarkan pemilik. Proxy `api/gas.js` menyimpan URL Apps Script di sisi server melalui `GAS_URL`. Kredensial dev mock: `uji@gfm.app` / `password123`.
 
 
 ## Cara penggunaan yang benar

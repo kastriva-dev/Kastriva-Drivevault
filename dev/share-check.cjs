@@ -1,9 +1,23 @@
 /* Verifikasi manual #30/#33: login UI -> context menu Share -> set Public -> token muncul -> toast varian -> cabut ke Private.
    Pakai PORT server 8178 (server dev 8177 tidak diganggu). */
 const puppeteer = require('C:/kastriva/_ganghub_uiaudit/node_modules/puppeteer-core');
-const BASE = 'http://127.0.0.1:8177';
+const { spawn } = require('node:child_process');
+const os = require('node:os');
+const path = require('node:path');
+const BASE = 'http://127.0.0.1:8178';
 
 (async () => {
+  const srv = spawn(process.execPath, [path.join(__dirname, 'mock-server.mjs')], {
+    env: { ...process.env, PORT: '8178', GFM_DATA_DIR: path.join(os.tmpdir(), 'gfm-share-' + process.pid) },
+    stdio: 'ignore',
+  });
+  let ready = false;
+  for (let i = 0; i < 40; i++) {
+    if (srv.exitCode !== null) throw new Error('mock server Share gagal start; port 8178 mungkin sedang dipakai');
+    try { const res = await fetch(BASE + '/manifest.json'); if (res.ok) { ready = true; break; } } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  if (!ready) throw new Error('mock server Share tidak siap di ' + BASE);
   const b = await puppeteer.launch({
     executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
     headless: 'new', args: ['--no-sandbox', '--disable-dev-shm-usage'],
@@ -24,7 +38,7 @@ const BASE = 'http://127.0.0.1:8177';
   // login via API lalu injeksi sesi SEBELUM load pertama (tanpa reload)
   const r = await fetch(BASE + '/api/gas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'login', email: 'uji@gfm.app', password: 'password123' }) }).then((x) => x.json());
   check('login API', r.ok, r.error || '');
-  await page.evaluateOnNewDocument((tok, user) => { localStorage.setItem('gfm.auth.v1', JSON.stringify({ token: tok, user })); }, r.data.token, r.data.user);
+  await page.evaluateOnNewDocument((tok, user) => { sessionStorage.setItem('gfm.auth.v1', JSON.stringify({ token: tok, user })); }, r.data.token, r.data.user);
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
   await page.waitForSelector('#grid .card .name', { timeout: 15000 });
   check('sesi injeksi -> grid tampil', true);
@@ -81,5 +95,6 @@ const BASE = 'http://127.0.0.1:8177';
 
   console.log('== ' + (fails ? fails + ' FAIL' : 'ALL PASS') + ' ==');
   await b.close();
+  srv.kill();
   process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error('FATAL', e.message); process.exit(1); });

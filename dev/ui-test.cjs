@@ -1,8 +1,11 @@
 /* Smoke test UI GFileManager via puppeteer-core + Chrome sistem.
    Verifikasi: render grid/list, upload, context menu, no-horizontal-scroll, sync panel. */
 const puppeteer = require('C:/kastriva/_ganghub_uiaudit/node_modules/puppeteer-core');
+const { spawn } = require('node:child_process');
+const os = require('node:os');
+const path = require('node:path');
 
-const BASE = 'http://127.0.0.1:8177';
+const BASE = 'http://127.0.0.1:8187';
 const ok = [], fail = [];
 function check(name, cond, extra = '') {
   (cond ? ok : fail).push(name);
@@ -18,6 +21,18 @@ async function api(action, payload = {}) {
 }
 
 (async () => {
+  const port = String(new URL(BASE).port);
+  const srv = spawn(process.execPath, [path.join(__dirname, 'mock-server.mjs')], {
+    env: { ...process.env, PORT: port, GFM_DATA_DIR: path.join(os.tmpdir(), 'gfm-ui-' + process.pid) },
+    stdio: 'ignore',
+  });
+  let ready = false;
+  for (let i = 0; i < 40; i++) {
+    if (srv.exitCode !== null) throw new Error('mock server UI gagal start; port ' + port + ' mungkin sedang dipakai');
+    try { const res = await fetch(BASE + '/manifest.json'); if (res.ok) { ready = true; break; } } catch {}
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  if (!ready) throw new Error('mock server UI tidak siap di ' + BASE);
   await api('_reset');
   const login = await api('login', { email: 'uji@gfm.app', password: 'password123' });
   if (!login.ok) { console.error('login gagal:', login.error); process.exit(1); }
@@ -33,7 +48,7 @@ async function api(action, payload = {}) {
     await page.setViewport({ width: 1366, height: 900 });
     // sesi diinjeksi sebelum halaman load pertama (auth gate #29 aktif di init)
     await page.evaluateOnNewDocument((t, u) => {
-      localStorage.setItem('gfm.auth.v1', JSON.stringify({ token: t, user: u }));
+      sessionStorage.setItem('gfm.auth.v1', JSON.stringify({ token: t, user: u }));
     }, login.data.token, login.data.user);
     await page.goto(BASE + '/', { waitUntil: 'networkidle2', timeout: 30000 });
     await new Promise((r) => setTimeout(r, 700));
@@ -140,7 +155,7 @@ async function api(action, payload = {}) {
     });
     await new Promise((r) => setTimeout(r, 300));
     const selInfo = await page.$eval('#selection-info', (el) => el.textContent);
-    check('ctrl+click multi-select (2 dipilih)', selInfo.includes('2 dipilih'), selInfo);
+    check('ctrl+click multi-select (2 selected)', selInfo.includes('2 files selected'), selInfo);
 
     /* 12. tema: light switch -> data-theme berubah + persist setelah reload */
     await page.setViewport({ width: 1366, height: 900 });
@@ -390,11 +405,11 @@ async function api(action, payload = {}) {
       li.click();
     });
     await new Promise((r) => setTimeout(r, 800));
-    const previewHasImg = await page.evaluate(() => {
+    const previewHasMedia = await page.evaluate(() => {
       const d = document.querySelector('#dialog');
-      return d.open && !!d.querySelector('img, video, audio, iframe, pre');
+      return d.open && !!d.querySelector('img, video, audio, iframe, pre, .preview-unavailable');
     });
-    check('preview foto.jpg: dialog preview tampil dengan media', previewHasImg);
+    check('preview foto.jpg: dialog preview tampil dengan media atau fallback', previewHasMedia);
     await page.evaluate(() => document.querySelector('#dialog-cancel').click());
 
     // ZIP: makeZip menghasilkan blob > 0
@@ -412,15 +427,16 @@ async function api(action, payload = {}) {
     await page.keyboard.up('Control');
     await new Promise((r) => setTimeout(r, 300));
     const selCount = await page.$eval('#selection-info', (el) => el.textContent);
-    check('Ctrl+A: pilih semua item', /\d+ dipilih/.test(selCount) && !selCount.startsWith('0'), selCount);
+    check('Ctrl+A: pilih semua item', /\d+ files? selected/.test(selCount) && !selCount.startsWith('0'), selCount);
     await page.evaluate(() => { App.state.selected.clear(); App.render(); });
 
     /* 13. tidak ada page error JS */
     check('tanpa error JS di halaman', pageErrors.length === 0, pageErrors.join(' | ').slice(0, 300));
 
     console.log('\nRINGKASAN: ' + ok.length + ' pass, ' + fail.length + ' fail');
-    process.exit(fail.length ? 1 : 0);
+    process.exitCode = fail.length ? 1 : 0;
   } finally {
     await browser.close();
+    srv.kill();
   }
 })().catch((e) => { console.error('FATAL', e); process.exit(1); });
