@@ -13,7 +13,9 @@
     "share-check": "node dev/share-check.cjs && node dev/public-link-check.cjs",
     "verify": "node --test \"tests/*.test.mjs\" && node dev/ui-test.cjs && node dev/share-check.cjs && node dev/public-link-check.cjs",
     "desktop": "electron .",
-    "build": "electron-builder --win nsis portable"
+    "build": "electron-builder --win nsis portable --publish never",
+    "build:web": "node -e \"console.log('Kastriva-DriveVault web/PWA build: static files ready for Vercel')\"",
+    "build:windows": "electron-builder --win nsis portable --publish never"
   },
   "devDependencies": {
     "electron": "44.3.0",
