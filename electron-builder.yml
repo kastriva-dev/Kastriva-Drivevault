@@ -13,6 +13,7 @@ files:
 extraMetadata:
   main: desktop/main.mjs
 win:
+  icon: assets/icons/icon-512.png
   target:
     - target: nsis
       arch:
@@ -20,7 +21,7 @@ win:
     - target: portable
       arch:
         - x64
-  artifactName: GFileManager-${version}-${arch}.${ext}
+  artifactName: Kastriva-DriveVault-${version}-${arch}.${ext}
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

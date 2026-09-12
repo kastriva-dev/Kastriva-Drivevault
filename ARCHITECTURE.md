@@ -1,11 +1,11 @@
-# GFileManager — Arsitektur
+# Kastriva-DriveVault — Arsitektur
 
 PWA file manager dengan penyimpanan lokal (IndexedDB/LocalStorage) + Cloud (Google Apps Script + Google Drive), desain Glassmorphism.
 
 ## Struktur
 
 ```
-GFileManager/
+Kastriva-DriveVault/
 ├── index.html            Halaman utama (grid/list, context menu, multi-select, DnD upload)
 ├── p/index.html          Halaman link publik /p/<token> (visitor anonim, tanpa login)
 ├── css/app.css           Glassmorphism UI (translucent panels, backdrop blur, tanpa h-scroll)
@@ -88,6 +88,12 @@ Per entri dibandingkan 3 sisi: Local (L), Cloud (C), berdasarkan `modified` + `v
 - `Cloud → Local`: mirror sebaliknya.
 - `Two-way`: gabungan; **konflik** (kedua sisi berubah sejak sync terakhir) → **keep both**: `nama (konflik dari Cloud).ext` disimpan, tidak ada file hilang.
 - Log sync dapat dilihat di panel Sync (timestamps, aksi per entri).
+
+## Deployment & penggunaan
+
+- Web production tidak boleh dibuka sebagai `file://`; gunakan hosting HTTPS karena membutuhkan `/api/gas` dan service worker.
+- Vercel menyimpan `GAS_URL` sebagai environment variable server-side.
+- Desktop menyimpan URL cloud di `userData/cloud-config.json`; token login cloud tetap berada pada session browser aplikasi.
 
 ## PWA
 

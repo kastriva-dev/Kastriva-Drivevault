@@ -152,12 +152,14 @@
   /* Cloud terpisah pada Electron; versi web memakai API GAS yang sama. */
   MM.cloudApi = {
     async call(action, payload = {}) {
+      const authPayload = window.MMAuth && typeof window.MMAuth.header === 'function' ? window.MMAuth.header() : {};
+      const requestPayload = { ...authPayload, ...payload };
       if (window.gfmDesktop) {
-        const json = await window.gfmDesktop.cloudCall(action, payload);
+        const json = await window.gfmDesktop.cloudCall(action, requestPayload);
         if (!json || json.ok === false) throw new Error((json && (json.error || json.message)) || 'Operasi cloud gagal');
         return json;
       }
-      return MM.api.call(action, payload);
+      return MM.api.call(action, requestPayload);
     },
     list() { return this.call('list'); },
     createFolder(parentId, name, syncKey) { return this.call('createFolder', { parentId, name, syncKey }); },

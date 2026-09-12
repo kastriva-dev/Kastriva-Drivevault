@@ -142,7 +142,7 @@ test('satu putaran publik penuh via API mock: public -> publicGet anonim -> cabu
 test('kontrak: daftar action mock server == daftar action Code.gs (parity modul API)', async () => {
   const fs = await import('node:fs');
   const mock = fs.readFileSync(path.join(ROOT, 'dev', 'mock-server.mjs'), 'utf8');
-  const gs = fs.readFileSync(path.join(ROOT, 'backend', 'Code.gs'), 'utf8');
+  const gs = fs.readFileSync(path.join(ROOT, 'gas', 'Code.gs'), 'utf8');
   const of = (src) => new Set([...src.matchAll(/case '([a-zA-Z_]+)':/g)].map((m) => m[1]));
   const a = of(mock), b = of(gs);
   // Code.gs bolehSubset (mis. purge/restore ada keduanya); yang wajib: semua aksi publik + share

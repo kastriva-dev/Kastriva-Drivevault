@@ -99,13 +99,14 @@ test('offline mode: sw cache + indikator + IndexedDB queue', () => {
   assert.match(off, /net-status/, 'modul offline harus memperbarui indikator utama');
 });
 
-test('backend Code.gs: semua action tersedia', () => {
-  const gs = readFileSync(path.join(ROOT, 'backend', 'Code.gs'), 'utf8');
+test('GAS Code.gs: semua action tersedia', () => {
+  const gs = readFileSync(path.join(ROOT, 'gas', 'Code.gs'), 'utf8');
   for (const a of ['list', 'upload', 'delete', 'createFolder', 'rename', 'move', 'favorite', 'download',
     'share', 'shareInfo', 'publicGet']) {
     assert.ok(gs.includes(`'${a}'`), 'action hilang: ' + a);
   }
-  assert.ok(gs.includes('DriveApp'), 'harus pakai DriveApp');
+  const drive = readFileSync(path.join(ROOT, 'gas', 'DriveService.gs'), 'utf8');
+  assert.ok(drive.includes('DriveApp'), 'DriveService harus memakai DriveApp');
   // #31/#32: sanitasi nama juga wajib ada di backend (parity dengan mock)
   assert.ok(gs.includes('sanitizeName_'), 'sanitizeName_ hilang');
   assert.match(gs, /uniqueName_\(db, e\.parentId, sanitizeName_\(/, 'rename tidak men-sanitize nama');

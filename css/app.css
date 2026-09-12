@@ -78,7 +78,8 @@ html[data-theme="light"] .glass-inset { background: rgba(255,255,255,0.55); }
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: .3px; }
-.logo { font-size: 20px; }
+.logo { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; }
+.brand-name { white-space: nowrap; }
 .topbar-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* tombol & input */
@@ -477,7 +478,7 @@ body.is-offline #btn-upload, body.is-offline #btn-upload-dir { opacity: .5; }
   background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
 }
 .auth-card { width: min(92vw, 380px); padding: 28px 24px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
-.auth-logo { font-size: 40px; }
+.auth-logo { width: 88px; height: 88px; margin: 0 auto; border-radius: 18px; object-fit: cover; }
 .auth-card h2 { margin: 4px 0 8px; font-size: 18px; }
 .auth-card .input { width: 100%; }
 .auth-err { color: var(--danger); font-size: 12.5px; padding: 6px 10px; border: 1px solid rgba(255,122,144,.35); border-radius: var(--radius-sm); }

@@ -10,9 +10,32 @@ var PROPS = PropertiesService.getScriptProperties();
 function loadMeta_() {
   var raw = PROPS.getProperty(META_KEY);
   if (raw) return JSON.parse(raw);
+  // Migrasi metadata versi lama yang masih disimpan sebagai satu property.
+  var legacy = PROPS.getProperty('GFM_ENTRIES_V2');
+  if (legacy) {
+    try { return JSON.parse(legacy); } catch (_) {}
+  }
+  var count = Number(PROPS.getProperty(META_KEY + '_COUNT') || 0);
+  if (count > 0) {
+    var parts = [];
+    for (var i = 0; i < count; i++) parts.push(PROPS.getProperty(META_KEY + '_' + i) || '');
+    raw = parts.join('');
+    if (raw) return JSON.parse(raw);
+  }
   return { entries: [], seq: 1 };
 }
-function saveMeta_(db) { PROPS.setProperty(META_KEY, JSON.stringify(db)); }
+function saveMeta_(db) {
+  var raw = JSON.stringify(db);
+  // Metadata dapat melewati batas satu property; simpan dalam chunk kecil.
+  var oldCount = Number(PROPS.getProperty(META_KEY + '_COUNT') || 0);
+  PROPS.deleteProperty(META_KEY);
+  var count = Math.ceil(raw.length / META_CHUNK_SIZE);
+  for (var i = 0; i < count; i++) {
+    PROPS.setProperty(META_KEY + '_' + i, raw.slice(i * META_CHUNK_SIZE, (i + 1) * META_CHUNK_SIZE));
+  }
+  for (var j = count; j < oldCount; j++) PROPS.deleteProperty(META_KEY + '_' + j);
+  PROPS.setProperty(META_KEY + '_COUNT', String(count));
+}
 function find_(db, id) {
   for (var i = 0; i < db.entries.length; i++) if (db.entries[i].id === id) return db.entries[i];
   return null;
@@ -55,6 +78,9 @@ function handle_(action, p) {
   p = p || {};
   try {
     if (AUTH_ACTIONS[action]) return authHandle_(action, p);
+    var writeLock = LockService.getScriptLock();
+    writeLock.waitLock(30000);
+    try {
     var currentUser = null;
     if (!PUBLIC_ACTIONS[action]) {
       currentUser = authRequireUser_(p.token);
@@ -260,6 +286,9 @@ function handle_(action, p) {
     }
   } catch (err) {
     return { ok: false, error: String(err) };
+  } finally {
+    try { writeLock.releaseLock(); } catch (_) {}
+  }
   }
 }
 

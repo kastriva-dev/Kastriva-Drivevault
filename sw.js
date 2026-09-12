@@ -3,14 +3,14 @@
    - Stale-while-revalidate utk aset same-origin
    - API /api/gas: network-first, fallback cache (GET list saja)
    - Navigasi: fallback ke index.html saat offline */
-const CACHE = 'gfm-v4';
+const CACHE = 'gfm-v5-drivevault';
 const SHELL = [
   './', './index.html', './css/app.css',
   './js/core.js', './js/sync.js', './js/offline.js', './js/conflict.js', './js/features.js', './js/auth.js', './js/theme.js',
   './js/app-main.js', './js/app-actions.js', './js/app-ctx.js', './js/app-sync.js',
   './manifest.json',
-  './assets/icons/icon-192.png', './assets/icons/icon-512.png',
-  './assets/icons/icon-maskable-192.png', './assets/icons/icon-maskable-512.png',
+  './assets/icons/logo.png', './assets/icons/favicon.ico',
+  './assets/icons/android-chrome-192x192.png', './assets/icons/android-chrome-512x512.png',
 ];
 
 self.addEventListener('install', (ev) => {

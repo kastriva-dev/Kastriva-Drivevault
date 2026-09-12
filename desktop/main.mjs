@@ -1,12 +1,14 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs/promises';
 import { createFileService } from './file-service.mjs';
 
 const APP_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let service;
 let mainWindow;
 let cloudUrl = '';
+let cloudConfigPath = '';
 
 function normalizeResult(data, message = 'Berhasil') {
   return { ok: true, success: true, message, data };
@@ -76,9 +78,10 @@ function registerIpc() {
   ipcMain.handle('gfm:call', (_event, action, payload) => dispatch(action, payload));
   ipcMain.handle('gfm:cloud-call', (_event, action, payload) => cloudDispatch(action, payload));
   ipcMain.handle('gfm:info', () => ({ desktop: true, workspaceRoot: service.root, cloudConfigured: !!cloudUrl, cloudUrl }));
-  ipcMain.handle('gfm:set-cloud-url', (_event, value) => {
+  ipcMain.handle('gfm:set-cloud-url', async (_event, value) => {
     try {
       cloudUrl = value ? validateCloudUrl(value) : '';
+      if (cloudConfigPath) await fs.writeFile(cloudConfigPath, JSON.stringify({ cloudUrl }, null, 2), 'utf8');
       return normalizeResult({ cloudUrl, cloudConfigured: !!cloudUrl }, 'Server cloud diperbarui');
     } catch (error) { return normalizeError(error); }
   });
@@ -103,10 +106,20 @@ function registerIpc() {
 
 async function createWindow() {
   const savedRoot = app.commandLine.getSwitchValue('workspace-root');
-  const requestedCloudUrl = app.commandLine.getSwitchValue('gas-url') || process.env.GFM_GAS_URL || '';
-  if (requestedCloudUrl) cloudUrl = validateCloudUrl(requestedCloudUrl);
+  cloudConfigPath = path.join(app.getPath('userData'), 'cloud-config.json');
+  let savedCloudUrl = '';
+  try {
+    const saved = JSON.parse(await fs.readFile(cloudConfigPath, 'utf8'));
+    savedCloudUrl = saved.cloudUrl || '';
+  } catch {}
+  const requestedCloudUrl = app.commandLine.getSwitchValue('gas-url') || process.env.GFM_GAS_URL || savedCloudUrl;
+  if (requestedCloudUrl) {
+    cloudUrl = validateCloudUrl(requestedCloudUrl);
+    try { await fs.mkdir(path.dirname(cloudConfigPath), { recursive: true }); await fs.writeFile(cloudConfigPath, JSON.stringify({ cloudUrl }, null, 2), 'utf8'); } catch {}
+  }
   // Semua operasi dibatasi pada root ini. Lokasi lain hanya aktif setelah user
   // memilihnya secara eksplisit melalui dialog native "Pilih Workspace Root".
+  // Nama folder lama dipertahankan agar pembaruan aplikasi tidak memutus data pengguna.
   const workspaceRoot = savedRoot || path.join(app.getPath('documents'), 'GFileManager');
   service = await createFileService(workspaceRoot);
   registerIpc();

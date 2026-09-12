@@ -1,4 +1,4 @@
-/* auth.js — Autentikasi GFileManager (#29).
+/* auth.js — Autentikasi Kastriva-DriveVault (#29).
    Login/Register/Logout/Session (token sesi di sessionStorage) + User Profile.
    Semua API call memakai token; data terisolasi per user di server (owner). */
 (function () {
@@ -39,22 +39,31 @@
     }
   };
 
+  async function authCall(action, payload) {
+    if (window.gfmDesktop) {
+      const r = await window.gfmDesktop.cloudCall(action, payload || {});
+      if (!r || r.ok === false || r.success === false) throw new Error((r && (r.error || r.message)) || 'Autentikasi cloud gagal');
+      return r;
+    }
+    return origCall(action, payload || {});
+  }
+
   A.login = async function (email, password) {
-    const r = await origCall('login', { email, password });
+    const r = await authCall('login', { email, password });
     A.token = r.data.token;
     A.user = r.data.user;
     persist();
     return r.data.user;
   };
   A.register = async function (email, name, password) {
-    const r = await origCall('register', { email, name, password });
+    const r = await authCall('register', { email, name, password });
     A.token = r.data.token;
     A.user = r.data.user;
     persist();
     return r.data.user;
   };
   A.logout = async function () {
-    try { if (A.token) await origCall('logout', { token: A.token }); } catch {}
+    try { if (A.token) await authCall('logout', { token: A.token }); } catch {}
     A.forceLogout();
   };
   A.forceLogout = function () {
@@ -63,7 +72,7 @@
     location.reload();
   };
   A.me = async function () {
-    const r = await origCall('me', { token: A.token });
+    const r = await authCall('me', { token: A.token });
     A.user = r.data.user;
     persist();
     return A.user;
@@ -75,23 +84,24 @@
     const ov = document.createElement('div');
     ov.id = 'auth-overlay';
     ov.className = 'auth-overlay hidden';
+    const desktopCloud = !!window.gfmDesktop;
     ov.innerHTML =
       '<div class="glass auth-card">' +
-      '<div class="auth-logo">🗂️</div>' +
-      '<h2 id="auth-title">Masuk ke GFileManager</h2>' +
+      '<img class="auth-logo" src="assets/icons/logo.png" alt="Logo Kastriva-DriveVault">' +
+      '<h2 id="auth-title">' + (desktopCloud ? 'Masuk ke Cloud' : 'Masuk ke Kastriva-DriveVault') + '</h2>' +
       '<div class="auth-err hidden" id="auth-err"></div>' +
       '<input class="input" id="auth-email" type="email" placeholder="Email" autocomplete="username">' +
       '<input class="input" id="auth-pass" type="password" placeholder="Password (min. 10, huruf + angka)" autocomplete="current-password">' +
       '<input class="input hidden" id="auth-name" placeholder="Nama tampilan" autocomplete="name">' +
       '<button class="btn primary" id="auth-go">Login</button>' +
       '<button class="btn" id="auth-switch">Belum punya akun? Daftar</button>' +
-      '<div class="auth-demo">Demo: uji@gfm.app / password123</div>' +
+      (desktopCloud ? '' : '<div class="auth-demo">Demo: uji@gfm.app / password123</div>') +
       '</div>';
     document.body.appendChild(ov);
     let reg = false;
     ov.querySelector('#auth-switch').addEventListener('click', () => {
       reg = !reg;
-      ov.querySelector('#auth-title').textContent = reg ? 'Daftar akun baru' : 'Masuk ke GFileManager';
+      ov.querySelector('#auth-title').textContent = reg ? 'Daftar akun baru' : (desktopCloud ? 'Masuk ke Cloud' : 'Masuk ke Kastriva-DriveVault');
       ov.querySelector('#auth-go').textContent = reg ? 'Daftar' : 'Login';
       ov.querySelector('#auth-name').classList.toggle('hidden', !reg);
       ov.querySelector('#auth-switch').textContent = reg ? 'Sudah punya akun? Login' : 'Belum punya akun? Daftar';
@@ -142,8 +152,32 @@
 
   function $ (s) { return document.querySelector(s); }
 
-  A.wire = function () {
+  A.enableCloudAuth = async function () {
+    if (!window.gfmDesktop) return;
+    ensureUI();
+    document.body.classList.add('auth-locked');
+    $('#auth-overlay').classList.remove('hidden');
+  };
+
+  A.wire = async function () {
     if (window.gfmDesktop) {
+      const info = await window.gfmDesktop.info().catch(() => null);
+      if (info && info.cloudConfigured) {
+        load();
+        ensureUI();
+        if (A.isAuth()) {
+          try {
+            await A.me();
+            document.body.classList.remove('auth-locked');
+            return;
+          } catch {
+            A.token = null; A.user = null; persist();
+          }
+        }
+        document.body.classList.add('auth-locked');
+        $('#auth-overlay').classList.remove('hidden');
+        return;
+      }
       A.token = 'desktop-local';
       A.user = { id: 'desktop-local', name: 'Pengguna Lokal', email: 'local@desktop' };
       return;

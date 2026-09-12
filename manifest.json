@@ -1,7 +1,7 @@
 {
-  "name": "GFileManager",
-  "short_name": "GFiles",
-  "description": "File manager PWA dengan sync Local/Cloud dan desain glassmorphism",
+  "name": "Kastriva-DriveVault",
+  "short_name": "DriveVault",
+  "description": "Kastriva-DriveVault — file manager aman dengan sinkronisasi Local/Cloud",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -11,10 +11,10 @@
   "lang": "id",
   "dir": "ltr",
   "icons": [
-    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "assets/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "assets/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
     { "name": "Upload file", "url": "./index.html?action=upload" },

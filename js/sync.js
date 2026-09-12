@@ -1,4 +1,4 @@
-/* sync.js — Sync Engine GFileManager.
+/* sync.js — Sync Engine Kastriva-DriveVault.
    Mode: "local2cloud" | "cloud2local" | "twoway"
    Prinsip: TIDAK PERNAH menimpa tanpa pengecekan.
    Konflik -> ditahan untuk review via MMConflicts (bukan auto keep-both).

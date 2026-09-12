@@ -1,4 +1,4 @@
-/* conflict.js — Pusat konflik GFileManager.
+/* conflict.js — Pusat konflik Kastriva-DriveVault.
    Konflik DITAHAN untuk review: tidak ada file yang ditimpa sampai user memilih.
    Persist di IndexedDB (gfm-offline v2, store: conflicts).
    Namespace: window.MMConflicts */

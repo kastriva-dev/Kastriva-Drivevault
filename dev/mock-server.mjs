@@ -1,4 +1,4 @@
-/* Mock backend GAS untuk GFileManager — meniru backend/Code.gs tapi disimpan di disk.
+/* Mock backend GAS untuk Kastriva-DriveVault — meniru backend/Code.gs tapi disimpan di disk.
    - Static file server untuk PWA dev
    - POST/GET /api/gas  {action: list|upload|delete|createFolder|rename|move|favorite|download|_reset}
    Data: dev/.data/fs.json (entries) + dev/.data/files/<id> (blob biner) */
@@ -430,5 +430,5 @@ export function start(port = PORT) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   ensureDirs();
   if (!loadDb()) { resetData(true); console.log('[mock] data seed dibuat di', DATA_DIR); }
-  server.listen(PORT, () => console.log(`[mock] GFileManager mock backend: http://localhost:${PORT} (API: /api/gas)`));
+  server.listen(PORT, () => console.log(`[mock] Kastriva-DriveVault mock backend: http://localhost:${PORT} (API: /api/gas)`));
 }

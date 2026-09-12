@@ -181,6 +181,9 @@
           if (!result.ok) throw new Error(result.error || result.message);
           App.desktopInfo = { ...App.desktopInfo, ...result.data };
           $('#sync-target-mode').textContent = result.data.cloudConfigured ? '(GAS aktif)' : '(belum dikonfigurasi)';
+          if (result.data.cloudConfigured && window.MMAuth) {
+            await MMAuth.enableCloudAuth();
+          }
           App.toast('Server cloud diperbarui', 'success');
         }, 'Simpan');
     });

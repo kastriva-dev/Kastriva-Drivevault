@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
 <meta name="robots" content="noindex">
-<title>Link Berbagi — GFileManager</title>
-<link rel="icon" href="/assets/icons/icon-192.png">
+<title>Link Berbagi — Kastriva-DriveVault</title>
+<link rel="icon" href="/assets/icons/favicon.ico" sizes="any">
 <script>
 /* anti-FOUC: sama seperti app utama, hormati gfm.theme.v1 (visitor anonim: default system) */
 try {
@@ -86,7 +86,7 @@ footer a { color: var(--acc); text-decoration: none; }
     el('meta').textContent = '';
     el('status').innerHTML = '<span class="err">' + esc(msg) + '</span>' +
       '<p>Berkas mungkin sudah dikembalikan ke Private oleh pemiliknya.</p>';
-    el('slot').innerHTML = '<a class="btn secondary" href="/">Buka GFileManager</a>';
+    el('slot').innerHTML = '<a class="btn secondary" href="/">Buka Kastriva-DriveVault</a>';
   }
 
   var m = /^\/p\/([^/?#]+)/.exec(location.pathname);
@@ -114,7 +114,7 @@ footer a { color: var(--acc); text-decoration: none; }
       } else {
         return fail('Isi berkas tidak tersedia.');
       }
-      html += '<a class="btn secondary" href="/">Buka GFileManager</a>';
+      html += '<a class="btn secondary" href="/">Buka Kastriva-DriveVault</a>';
       el('slot').innerHTML = html;
       var dl = el('dl');
       if (dl) dl.addEventListener('click', function () {
@@ -132,7 +132,7 @@ footer a { color: var(--acc); text-decoration: none; }
         } catch (e) { alert('Unduh gagal: ' + e.message); }
         dl.disabled = false;
       });
-      document.title = d.name + ' — GFileManager';
+      document.title = d.name + ' — Kastriva-DriveVault';
     })
     .catch(function () { fail('Jaringan gagal — periksa koneksi lalu muat ulang.'); });
 })();

@@ -1,7 +1,8 @@
 {
-  "name": "gfilemanager",
+  "name": "kastriva-drivevault",
+  "productName": "Kastriva-DriveVault",
   "version": "1.0.0",
-  "description": "GFileManager - Windows desktop dan PWA file manager dengan sync Local/Cloud",
+  "description": "Kastriva-DriveVault - Windows desktop dan PWA file manager aman dengan sync Local/Cloud",
   "main": "desktop/main.mjs",
   "type": "module",
   "scripts": {

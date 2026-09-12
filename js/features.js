@@ -1,4 +1,4 @@
-/* features.js — fitur GFileManager #13-28:
+/* features.js — fitur Kastriva-DriveVault #13-28:
    metadata+syncStatus, trash, upload manager (progress/cancel/retry), download ZIP,
    search filter, sort, preview. Namespace: window.F */
 (function () {
@@ -425,7 +425,7 @@
       ? App.state.entries.filter((e) => App.state.selected.has(e.id))
       : App.state.entries.filter((e) => !e.deleted && e.parentId === App.state.cwd);
     if (!targets.length) { App.toast('Tidak ada item untuk di-ZIP'); return; }
-    const rootName = App.state.cwd === 'root' ? 'GFileManager'
+    const rootName = App.state.cwd === 'root' ? 'Kastriva-DriveVault'
       : (App.state.entries.find((e) => e.id === App.state.cwd) || {}).name || 'files';
     const task = F.startDownload(rootName + '.zip');
     App.toast('Membuat ZIP…');

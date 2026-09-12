@@ -1,4 +1,4 @@
-/* app-sync.js — sync UI, PWA (install prompt, offline), init GFileManager. */
+/* app-sync.js — sync UI, PWA (install prompt, offline), init Kastriva-DriveVault. */
 (function () {
   'use strict';
   const MM = window.MM;

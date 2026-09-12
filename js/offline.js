@@ -1,4 +1,4 @@
-/* offline.js — Offline Mode GFileManager.
+/* offline.js — Offline Mode Kastriva-DriveVault.
    - IndexedDB (store: entries, blobs, queue) = local cache + antrian offline changes
    - Deteksi online/offline + banner indikator
    - Queue offline changes -> flush otomatis saat koneksi kembali (FIFO, retry 3x)

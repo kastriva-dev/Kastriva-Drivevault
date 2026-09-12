@@ -1,4 +1,4 @@
-# GFileManager
+# Kastriva-DriveVault
 
 File manager PWA bergaya **glassmorphism** dengan sync **Local ↔ Cloud** (Google Apps Script + Google Drive).
 
@@ -56,6 +56,110 @@ Buka http://localhost:8177 — data seed: folder `Projects`, `laporan.pdf`, `dat
 API: `POST /api/gas {action: list|upload|delete|createFolder|rename|move|favorite|download|share|shareInfo|sharedList|publicGet|register|login|logout|me|quota}`.
 
 Catatan login produksi: `backend/Code.gs` menyimpan metadata tanpa auth multi-user; untuk multi-user penuh, deploy lewat proxy `api/gas.js` + `ADMIN_API_TOKEN` (sama pola dengan kastriva-smartkasir) atau batasi akses Web App ke akun Google tertentu. Kredensial dev mock: `uji@gfm.app` / `password123`.
+
+
+## Cara penggunaan yang benar
+
+### A. Menjalankan webapp di komputer
+
+Jangan membuka `index.html` dengan double-click (`file://`). Webapp memakai endpoint `/api/gas` dan service worker sehingga harus dijalankan melalui HTTP/HTTPS.
+
+Untuk mode development tanpa Google Drive:
+
+```bash
+npm install
+npm run dev
+```
+
+Kemudian buka `http://localhost:8177`. Mode ini memakai mock backend dan data uji lokal.
+
+### B. Mengaktifkan webapp production
+
+Arsitektur production adalah:
+
+```text
+Browser / PWA
+    ↓
+Vercel /api/gas
+    ↓
+Google Apps Script Web App
+    ↓
+Google Drive
+```
+
+Langkah:
+
+1. Buat satu project Google Apps Script baru.
+2. Gunakan **hanya** file `.gs` dari folder `gas/` sebagai file terpisah (jangan mencampurkan source backend lama): `Config.gs`, `Api.gs`, `DriveService.gs`, `SyncService.gs`, `Utils.gs`, `SecurityService.gs`, `AuthService.gs`, `Code.gs`.
+3. Jalankan deployment **Web app**. Gunakan URL deployment yang berakhiran `/exec`.
+4. Pastikan Web App dapat menerima request dari aplikasi dan memiliki izin Google Drive yang diperlukan. Saat deployment pertama kali, izinkan akses yang diminta Apps Script.
+5. Di project Vercel, buat environment variable:
+
+```text
+GAS_URL=https://script.google.com/macros/s/ID_DEPLOYMENT/exec
+```
+
+6. Deploy folder project ini ke Vercel.
+7. Buka domain Vercel melalui HTTPS.
+8. Daftar akun pada aplikasi, lalu login.
+9. Upload file. Metadata disimpan oleh backend dan binary file disimpan di Google Drive.
+
+**Penting:** URL GAS tidak perlu ditulis ke `index.html`. Browser production melewati `/api/gas`; `GAS_URL` disimpan sebagai environment variable server Vercel.
+
+### C. Penggunaan aplikasi Windows
+
+1. Install dependency:
+
+```bash
+npm install
+```
+
+2. Jalankan:
+
+```bash
+npm run desktop
+```
+
+3. Aplikasi membuat Workspace lokal default di folder Documents pengguna:
+
+```text
+Documents/GFileManager
+```
+
+4. Gunakan tombol **Workspace** untuk memilih folder lain.
+5. Gunakan file manager seperti biasa untuk file lokal.
+6. Buka **Sync → Atur Server** dan masukkan URL GAS `/exec`. URL tersebut sekarang disimpan agar tidak perlu dimasukkan ulang setiap aplikasi dibuka.
+7. Setelah server dikonfigurasi, login menggunakan akun Kastriva-DriveVault yang sama dengan webapp. Token cloud dipakai untuk operasi cloud sehingga data tetap terisolasi per akun.
+8. Pilih mode sync:
+   - **Local → Cloud**: kirim perubahan lokal ke cloud.
+   - **Cloud → Local**: ambil perubahan cloud ke lokal.
+   - **Two Way Sync**: sinkronisasi dua arah dan tahan konflik untuk keputusan pengguna.
+
+### D. PWA / HP
+
+Buka domain production melalui HTTPS dari Chrome/Edge yang mendukung PWA, kemudian pilih **Install App**. Jangan mengharapkan PWA bekerja dari `file://`.
+
+### E. Urutan penggunaan yang disarankan
+
+```text
+1. Deploy GAS
+2. Set GAS_URL di Vercel
+3. Deploy webapp
+4. Daftar/Login akun
+5. Uji upload/download di web
+6. Build/install aplikasi Windows
+7. Atur Server GAS di Windows
+8. Login cloud di Windows
+9. Pilih Workspace
+10. Uji Sync
+11. Baru aktifkan penggunaan rutin
+```
+
+### Catatan kapasitas
+
+Versi ini menggunakan payload Base64 melalui Apps Script untuk upload/download. Ini cocok untuk file kecil sampai menengah, tetapi bukan desain ideal untuk file sangat besar atau ribuan file sekaligus. Untuk produksi skala besar, layer storage/upload sebaiknya dipindahkan ke object storage/API yang mendukung multipart/resumable upload.
+
+Backend metadata sekarang memakai chunked PropertiesService agar tidak langsung gagal ketika satu property melewati batas ukuran, tetapi total kapasitas PropertiesService tetap terbatas. Untuk deployment multi-user besar, metadata sebaiknya dimigrasikan ke database/Google Sheet yang terstruktur atau storage database khusus.
 
 ## Struktur
 
